@@ -1,11 +1,20 @@
 import express from "express";
 import { config as connectDB } from "./config/db.js";
+import { Server, Socket } from "socket.io";
+import http from "http";
+import authRouter from "./routes/authRoutes.js";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 
 connectDB();
 
 app.use(express.json());
+app.use(authRouter);
 
 const PORT = 3000;
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
