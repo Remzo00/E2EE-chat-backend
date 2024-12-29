@@ -5,21 +5,18 @@ import http from "http";
 import authRouter from "./routes/authRoutes.js";
 import dotenv from "dotenv";
 import { socketHandlers } from "./sockets/chatSocket.js";
+import cors from "cors";
 
 dotenv.config();
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:5173",
-    methods: ["GET", "POST"],
-  },
-});
+// const server = http.createServer(app);
+// const io = new Server(server);
 
-socketHandlers(io);
+// socketHandlers(io);
 connectDB();
 
+app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json());
 app.use(authRouter);
 
