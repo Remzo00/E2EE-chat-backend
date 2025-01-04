@@ -3,12 +3,18 @@ export const socketHandlers = (io) => {
     console.log(`User connected: ${socket.id}`);
 
     socket.on("send_message", (data) => {
+      console.log("Received message data:", data);
+
       const messageData = {
         ...data,
         senderId: socket.id,
+        senderName: data.senderName,
       };
 
-      socket.broadcast.to(data.room).emit("receive_message", messageData);
+      socket.broadcast.to(data.room).emit("receive_message", messageData, {
+        senderId: socket.id,
+        senderName: data.senderName,
+      });
     });
 
     socket.on("join_room", (room) => {
