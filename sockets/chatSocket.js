@@ -1,28 +1,40 @@
+import { prepareEncryptedMessage } from "../services/encryptionService.js";
+import { saveMessage } from "../services/messageService.js";
 export const socketHandlers = (io) => {
   io.on("connection", (socket) => {
     console.log(`User connected: ${socket.id}`);
 
-    socket.on("send_message", (data) => {
-      const base64EncryptedData = Buffer.from(data.encryptedData).toString(
-        "base64"
-      );
-      const base64IV = Buffer.from(data.iv).toString("base64");
-      console.log("Encrypted message received:", {
-        encryptedData: base64EncryptedData,
-        iv: base64IV,
-        room: data.room,
-        senderName: data.senderName,
-      });
+    // const uint8ArrayToBase64 = (array) => {
+    //   return Buffer.from(array).toString("base64");
+    // };
 
-      const messageData = {
-        encryptedData: data.encryptedData,
-        iv: data.iv,
-        room: data.room,
-        senderId: socket.id,
-        senderName: data.senderName,
-      };
+    socket.on("send_message", async (data) => {
+      try {
+        // const encryptedBase64 = Buffer.from(data.encryptedData).toString(
+        //   "base64"
+        // );
+        // const ivBase64 = Buffer.from(data.iv).toString("base64");
 
-      socket.broadcast.to(data.room).emit("receive_message", messageData);
+        // const savedMessage = await saveMessage({
+        //   encryptedData: encryptedBase64,
+        //   iv: ivBase64,
+        //   room: data.room,
+        //   senderName: data.senderName,
+        //   timestamp: new Date(),
+        // });
+
+        // For socket broadcast, keep the original array format
+        const messageData = {
+          encryptedData: data.encryptedData,
+          iv: data.iv,
+          room: data.room,
+          senderName: data.senderName,
+        };
+
+        socket.broadcast.to(data.room).emit("receive_message", messageData);
+      } catch (error) {
+        console.error("Error handling send_message:", error);
+      }
     });
 
     socket.on("share_key", (data) => {

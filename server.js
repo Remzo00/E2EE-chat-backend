@@ -6,6 +6,7 @@ import authRouter from "./routes/authRoutes.js";
 import dotenv from "dotenv";
 import { socketHandlers } from "./sockets/chatSocket.js";
 import cors from "cors";
+import messageRouter from "./routes/messageRoutes.js";
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ connectDB();
 app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json());
 app.use(authRouter);
+app.use(messageRouter);
 
 const PORT = 3000;
 server.listen(PORT, () => console.log(`Server started on port ${PORT}`));
