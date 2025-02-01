@@ -1,39 +1,40 @@
 import { prepareEncryptedMessage } from "../services/encryptionService.js";
 import { saveMessage } from "../services/messageService.js";
+import crypto from "crypto";
 export const socketHandlers = (io) => {
   io.on("connection", (socket) => {
     console.log(`User connected: ${socket.id}`);
 
-    // const uint8ArrayToBase64 = (array) => {
-    //   return Buffer.from(array).toString("base64");
-    // };
-
     socket.on("send_message", async (data) => {
       try {
-        // const encryptedBase64 = Buffer.from(data.encryptedData).toString(
-        //   "base64"
-        // );
-        // const ivBase64 = Buffer.from(data.iv).toString("base64");
+        if (!data.key || !data.message) {
+          throw new Error("Missing key or message for encryption.");
+        }
 
-        // const savedMessage = await saveMessage({
-        //   encryptedData: encryptedBase64,
-        //   iv: ivBase64,
-        //   room: data.room,
-        //   senderName: data.senderName,
-        //   timestamp: new Date(),
-        // });
+        const key = Buffer.from(data.key, "base64");
+        if (key.length !== 32) {
+          throw new Error(
+            "Invalid key length. AES-256 requires a 32-byte key."
+          );
+        }
 
-        // For socket broadcast, keep the original array format
-        const messageData = {
-          encryptedData: data.encryptedData,
-          iv: data.iv,
+        const iv = crypto.randomBytes(16);
+        const ivBase64 = iv.toString("base64");
+
+        const cipher = crypto.createCipheriv("aes-256-cbc", key, iv);
+        let encryptedData = cipher.update(data.message, "utf8", "base64");
+        encryptedData += cipher.final("base64");
+
+        // Sačuvajte poruku u bazi
+        const savedMessage = await saveMessage({
+          encryptedData: encryptedData,
+          iv: ivBase64,
           room: data.room,
           senderName: data.senderName,
-        };
-
-        socket.broadcast.to(data.room).emit("receive_message", messageData);
+          timestamp: new Date(),
+        });
       } catch (error) {
-        console.error("Error handling send_message:", error);
+        console.error(`Error handling send_message: ${error.message}`);
       }
     });
 
