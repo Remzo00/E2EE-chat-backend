@@ -4,9 +4,6 @@ import jwt from "jsonwebtoken";
 
 export const registerUser = async (username, email, password) => {
   try {
-    // console.log("Name:", name);
-    // console.log("Email:", email);
-    // console.log("Password:", password);
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({ username, email, password: hashedPassword });
     await newUser.save();
@@ -34,7 +31,7 @@ export const loginUser = async (email, password) => {
   }
 
   const token = jwt.sign(
-    { email: user.email, id: user._id },
+    { email: user.email, id: user._id, username: user.username },
     process.env.TOKEN_SECRET,
     { expiresIn: "24h" }
   );
