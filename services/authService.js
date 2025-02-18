@@ -7,7 +7,13 @@ export const registerUser = async (username, email, password) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({ username, email, password: hashedPassword });
     await newUser.save();
-    return newUser;
+
+    const token = jwt.sign(
+      { id: newUser._id, email: newUser.email },
+      process.env.TOKEN_SECRET,
+      { expiresIn: "24h" }
+    );
+    return { token, user: newUser };
   } catch (error) {
     console.error("Error registering user:", error);
     throw new Error("Error registering user");
