@@ -1,53 +1,72 @@
 import User from "../models/user.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { sendVerificationEmail } from "./emailService.js";
+import crypto from "crypto";
 
-export const registerUser = async (username, email, password) => {
+export async function registerUser(username, email, password) {
   try {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({ username, email, password: hashedPassword });
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      throw new Error("User with this email already exists");
+    }
+
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationTokenExpires = Date.now() + 24 * 60 * 60 * 1000;
+
+    const newUser = new User({
+      username,
+      email,
+      password: hashedPassword,
+      verificationToken,
+      verificationTokenExpires,
+      isVerified: false,
+    });
+
     await newUser.save();
 
-    const token = jwt.sign(
-      { id: newUser._id, email: newUser.email },
-      process.env.TOKEN_SECRET,
-      { expiresIn: "24h" }
-    );
-    return { token, user: newUser };
+    await sendVerificationEmail(email, verificationToken);
+
+    return {
+      user: newUser,
+    };
   } catch (error) {
-    console.error("Error registering user:", error);
-    throw new Error("Error registering user");
+    throw new Error("Error registering user: " + error.message);
   }
-};
+}
 
-export const loginUser = async (email, password) => {
-  if (!process.env.TOKEN_SECRET) {
-    throw new Error("TOKEN_SECRET is not defined");
+export async function loginUser(email, password) {
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      throw new Error("Invalid email or password");
+    }
+
+    if (!user.isVerified) {
+      throw new Error("Please verify your email before logging in");
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new Error("Invalid email or password");
+    }
+
+    if (!process.env.TOKEN_SECRET) {
+      console.error("JWT_SECRET is missing in environment variables");
+      throw new Error("Server configuration error");
+    }
+
+    const token = jwt.sign(
+      { userId: user._id, email: user.email },
+      process.env.TOKEN_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    return token;
+  } catch (error) {
+    throw new Error(error.message);
   }
-  const user = await User.findOne({ email });
-
-  if (!user) {
-    throw new Error("User not found");
-  }
-
-  const isPasswordValid = await bcrypt.compare(password, user.password);
-
-  if (!isPasswordValid) {
-    throw new Error("Invalid password");
-  }
-
-  const token = jwt.sign(
-    { email: user.email, id: user._id, username: user.username },
-    process.env.TOKEN_SECRET,
-    { expiresIn: "24h" }
-  );
-
-  return {
-    token,
-    user: {
-      _id: user._id,
-      email: user.email,
-      username: user.username,
-    },
-  };
-};
+}
