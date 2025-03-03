@@ -1,21 +1,24 @@
 import nodemailer from "nodemailer";
 import User from "../models/user.js";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.ethereal.email",
-  port: 587,
+  service: "gmail",
   auth: {
-    user: "margot42@ethereal.email",
-    pass: "2KGfEuEcRMdCYjJQX6",
+    user: process.env.EMAIL,
+    pass: process.env.PASSWORD,
   },
+  secure: true,
+  port: 465,
 });
 
 export const sendVerificationEmail = async (email, verificationToken) => {
   const verificationLink = `http://localhost:5173/verify/${verificationToken}`;
-  console.log(verificationLink);
 
   const mailOptions = {
-    from: "kassandra.cartwright53@ethereal.email",
+    from: process.env.EMAIL,
     to: email,
     subject: "Verifikacija email adrese",
     html: `
