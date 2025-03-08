@@ -3,9 +3,9 @@ import { verifyEmail } from "../services/emailService.js";
 import User from "../models/user.js";
 
 export async function register(req, res) {
-  const { username, email, password } = req.body;
+  const { username, email, password, captchaToken } = req.body;
   try {
-    const newUser = await registerUser(username, email, password);
+    const newUser = await registerUser(username, email, password, captchaToken);
     res.status(201).json({
       message:
         "Registration successful. Please check your email for verification.",

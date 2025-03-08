@@ -3,9 +3,26 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { sendVerificationEmail } from "./emailService.js";
 import crypto from "crypto";
+import axios from "axios";
+import dotenv from "dotenv";
 
-export async function registerUser(username, email, password) {
+dotenv.config();
+
+export async function registerUser(username, email, password, captchaToken) {
   try {
+    const recaptchaSecret = process.env.SECRET_KEY;
+    const recaptchaResponse = await axios.post(
+      `https://www.google.com/recaptcha/api/siteverify`,
+      new URLSearchParams({
+        secret: recaptchaSecret,
+        response: captchaToken,
+      })
+    );
+
+    if (!recaptchaResponse.data.success) {
+      throw new Error("CAPTCHA verification failed");
+    }
+
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       throw new Error("User with this email already exists");
