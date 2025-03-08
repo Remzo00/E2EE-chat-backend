@@ -82,7 +82,14 @@ export async function loginUser(email, password) {
       { expiresIn: "1h" }
     );
 
-    return token;
+    return {
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+      },
+    };
   } catch (error) {
     throw new Error(error.message);
   }
